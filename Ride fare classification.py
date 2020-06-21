@@ -14,7 +14,7 @@ from sklearn.metrics import roc_auc_score
 
 import numpy as np
 import pandas as pd
-
+from helperFunctions import harvesine, report
 
 # load data from csv
 df_train = pd.read_csv('../input/fareclassification/train.csv') 
@@ -42,25 +42,7 @@ for column in cate_cols:
 df_train['duration'] = df_train['drop_time']-df_train['pickup_time']
 
 # add new feature "distance" for trip distance calculated using lat and long
-def haversine(row):
-    """
-    Calculate the great circle distance between two points 
-    on the earth (specified in decimal degrees)
-    """
-    # convert decimal degrees to radians
-    lon1 = row['pick_lon']
-    lat1 = row['pick_lat']
-    lon2 = row['drop_lon']
-    lat2 = row['drop_lat']
 
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    # haversine formula 
-    dlon = lon2 - lon1 
-    dlat = lat2 - lat1 
-    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-    c = 2 * asin(sqrt(a)) 
-    km = 6367 * c
-    return km
 
 df_train['distance'] = df_train.apply(haversine, axis=1)
 df_train = df_train.drop(['pick_lon','pick_lat','drop_lon','drop_lat','pickup_time','drop_time'],axis=1)
@@ -107,18 +89,6 @@ random_search = RandomizedSearchCV(clf, param_distributions=param_grid,
                                    n_iter=n_iter_search)
 
 random_search.fit(X_train, y_train)
-
-##Function to report search results
-def report(results, n_top=3):
-    for i in range(1, n_top + 1):
-        candidates = np.flatnonzero(results['rank_test_score'] == i)
-        for candidate in candidates:
-            print("Model with rank: {0}".format(i))
-            print("Mean validation score: {0:.3f} (std: {1:.3f})".format(
-                  results['mean_test_score'][candidate],
-                  results['std_test_score'][candidate]))
-            print("Parameters: {0}".format(results['params'][candidate]))
-            print("")
 
 report(random_search.cv_results_)
 
